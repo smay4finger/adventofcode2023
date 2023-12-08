@@ -1,16 +1,22 @@
 ﻿
 using System.Diagnostics;
+
+static IEnumerable<long> Range(long start, long length)
+{
+    for (long i = start; i < start + length; i++)
+        yield return i;
+}
+
 static long LowestInRange(Almanac almanac, long start, long length)
 {
+    var stopWatch = Stopwatch.StartNew();
     Console.WriteLine($"calculating from {start} to {start + length - 1}");
-    long lowest = long.MaxValue;
-    for (long seed = start; seed <= length; seed++)
-    {
-        var location = almanac.SeedToLocation(seed);
-        if (location < lowest)
-            lowest = location;
-    }
-    return lowest;
+
+    var result = Range(start, length).Select(seed => almanac.SeedToLocation(seed)).Min();
+
+    stopWatch.Stop();
+    Console.WriteLine(($"calculated {length} in {stopWatch.Elapsed}"));
+    return result;
 }
 
 var stopWatch = new Stopwatch();
@@ -19,6 +25,7 @@ var stopWatch = new Stopwatch();
 var exampleAlmanac = new Almanac("Day05_Example.txt");
 
 if (exampleAlmanac.Seeds.Select(s => exampleAlmanac.SeedToLocation(s)).Min() != 35) throw new Exception();
+if (exampleAlmanac.Seeds.Select(s => LowestInRange(exampleAlmanac, s, 1)).Min() != 35) throw new Exception();
 if (exampleAlmanac.RangeSeeds.Select(s => exampleAlmanac.SeedToLocation(s)).Min() != 46) throw new Exception();
 
 var exapmleSeedRanges = exampleAlmanac.Seeds.Chunk(2);
@@ -36,7 +43,7 @@ var seedRanges = almanac.Seeds.Chunk(2);
 
 
 stopWatch.Start();
-var result = from seedRange in seedRanges.AsParallel().WithDegreeOfParallelism(5)
+var result = from seedRange in seedRanges.AsParallel()
              select LowestInRange(almanac, seedRange[0], seedRange[1]);
 var lowestLocation = result.Min();
 stopWatch.Stop();
